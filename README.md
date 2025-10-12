@@ -61,7 +61,7 @@ Políticas:
 <p align="center">
   <img src="Images/DCU.png" width="400">
   <br>
-  <b>Fig. 1. Diagrama de caso de uso.</b>
+  <b>Fig. 1. Diagrama de Concepto de Operaciones.</b>
 </p>
 
 <p align="center">
