@@ -1,71 +1,124 @@
-<div align="center">
+# Detector de Objetos con YOLOv5 en Raspberry Pi OS
 
-# EL5841 Taller de Sistemas Embebidos
+## 🧩 1. Dependencias necesarias
 
-**Murillo Vega Milton**, **Marcos Josue Marin Vargas**, **Rodriguez Rocha Fernando Jose**  
-Estudiantes, Tecnológico de Costa Rica  
+### 🔹 Librerías de Python
+```bash
+sudo apt update
+sudo apt install python3-pip python3-opencv python3-venv -y
+pip3 install ultralytics onnx onnxruntime
+```
 
-**Cruces inteligentes con EDGE AI embebido**
+**Explicación:**
+- **ultralytics** → Framework que permite cargar y usar modelos YOLOv5, YOLOv8 y ONNX.  
+- **onnx** → Define el formato estándar en que se exporta el modelo.  
+- **onnxruntime** → Motor de ejecución optimizado para correr modelos ONNX con buena velocidad.  
+- **opencv-python** → Permite acceder a la cámara, capturar video e interactuar visualmente con los resultados.
 
-</div>
+---
 
-### Introducción
+## 📸 2. Dependencias del sistema (Raspberry Pi OS)
 
-### Justificación
+```bash
+sudo apt install libatlas-base-dev libopenblas-dev libhdf5-dev
+sudo apt install libopencv-dev v4l-utils -y
+```
 
-### Recursos
-#### Hardware
-* Raspberry Pi 4/5 (≥4 GB), microSD/SSD.
+Para verificar la cámara:
+```bash
+v4l2-ctl --list-devices
+```
 
-* Cámara (PiCam).
+Debe aparecer listada como `/dev/video0` o similar.
 
-* LEDs R/A/V + resistencias.
+---
 
-* Protoboard/caja, fuente.
+## 🧠 3. Archivos del proyecto
 
-* Punto de acceso Wi-Fi.
+### a. Modelo exportado
+Archivo necesario:
+```
+yolov5su.onnx
+```
+Contiene solo los **pesos del modelo YOLOv5**, en formato ONNX.
 
-#### Software
-* Linux embebido (Yocto) + systemd.
- 
-* GStreamer (+ gst-rtsp-server) para RTSP.
- 
-* OpenCV + TensorFlow Lite.
+### b. Script principal
+```python
+from ultralytics import YOLO
+import cv2
 
-* Tracker (SORT/OC-SORT), lógica de políticas del semáforo, servicio GPIO.
- 
-* Telemetría básica VLC FFmpeg con un servidor RTSP.
+# Cargar el modelo ONNX
+model = YOLO("yolov5su.onnx")
 
-* Integración de flujo con python.
+# Inicializar la cámara
+cap = cv2.VideoCapture(0)
 
-#### Requerimientos
+# Verificar la cámara
+if not cap.isOpened():
+    print("Error: No se pudo abrir la cámara")
+    exit()
 
-Detección/seguimiento de personas/animales/vehículos.
+cv2.namedWindow("Detección YOLOv5", cv2.WINDOW_NORMAL)
 
-Políticas:
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        print("Error: No se pudo leer el frame")
+        break
 
-* Animal → Amarillo-rojo. Transición inmediata (LED A, R).
+    results = model(frame)
+    if len(results) > 0:
+        for result in results:
+            frame_with_boxes = result.plot()
+    else:
+        frame_with_boxes = frame
 
-* Personas → Amarillo-rojo. Transición dinámica; Tiempo inicial 3 min, reducción dinámica por persona 30 s.
+    cv2.imshow("Detección YOLOv5", frame_with_boxes)
 
-* Sin vehículos → Rojo. Transito de personas y animales.
+    if cv2.waitKey(1) & 0xFF == 27:
+        break
 
-* Salida a LEDs (R/A/V) y exposición del RTSP con video en tiempo real.
+cap.release()
+cv2.destroyAllWindows()
+```
 
-* Paso de personas 1 min.
+Este script usa el modelo exportado y realiza detección en tiempo real.
 
-* Detectar carros nuevamente → dar paso dentro de 1 min.
+---
 
-* Paso de animales 2 min.
+## ⚙️ 4. Flujo estructurado del sistema
 
-<p align="center">
-  <img src="Images/DCU.png" width="400">
-  <br>
-  <b>Fig. 1. Diagrama de caso de uso.</b>
-</p>
+| Etapa | Descripción |
+|-------|--------------|
+| **1. Captura de imagen** | OpenCV obtiene cada frame desde la cámara. |
+| **2. Inferencia con YOLOv5 (ONNX)** | El modelo `yolov5su.onnx` se ejecuta mediante Ultralytics. |
+| **3. Detección** | El modelo devuelve las cajas y etiquetas detectadas. |
+| **4. Visualización** | OpenCV dibuja las cajas en la ventana. |
+| **5. Control del flujo** | Se ejecuta hasta que se presione la tecla `Esc`. |
 
-<p align="center">
-  <img src="Images/Flujo.png" width="600">
-  <br>
-  <b>Fig. 2. Flujo de trabajo del sistema.</b>
-</p>
+---
+
+## 🔗 5. Enlaces útiles
+
+- [Documentación Ultralytics](https://docs.ultralytics.com)
+- [Modelos YOLOv5 preentrenados](https://github.com/ultralytics/yolov5/releases)
+- [ONNX (Open Neural Network Exchange)](https://onnx.ai/)
+- [ONNX Runtime](https://onnxruntime.ai/)
+
+---
+
+## 🧾 6. Recomendaciones de rendimiento
+
+- Reducir resolución:
+  ```python
+  cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+  cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+  ```
+- Cerrar procesos innecesarios antes de ejecutar.
+- Para mayor velocidad, se puede convertir a **TensorRT** o **OpenVINO**, aunque ONNX es suficiente.
+
+---
+
+📘 **Autor:** Josué Marín  
+📅 **Proyecto:** Detector de Objetos en Raspberry Pi – YOLOv5 (ONNX)  
+🏷️ **Versión:** 1.0
