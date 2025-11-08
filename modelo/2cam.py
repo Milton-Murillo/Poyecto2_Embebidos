@@ -5,7 +5,7 @@
 # Personas (en Verde): -30s por persona NUEVA solo si el nuevo conteo se sostiene >= hold_sec.
 # Animales (en Verde): cambio a Amarillo solo si animal sostenido >= hold_sec; luego Rojo 1min.
 # Vehículos: ausencia sostenida => Rojo HOLD (sin tiempo). Presencia sostenida saliendo de HOLD => Rojo 1min.
-
+#Execute command: python3 2cam.py --model 1.tflite   --cam0 /dev/video0 --cam1 /dev/video2   --cam0_keep @vehicles --cam1_keep @person_animals   --cap_w 640 --cap_h 480 --fourcc YUYV   --threads0 2 --threads1 1 --infer_every 1   --thr0 0.40 --thr1 0.35 --mar0 0.003 --mar1 0.01   --topk0 50 --topk1 50 --layout h   --hold_sec 5
 import argparse, time, os, sys, threading
 import numpy as np, cv2
 
